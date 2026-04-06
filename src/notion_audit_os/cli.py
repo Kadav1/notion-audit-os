@@ -38,6 +38,7 @@ from typing import Optional
 import typer
 
 from . import __version__
+from . import export as E
 from . import findings as F
 from . import intake as I
 from . import models as M
@@ -655,44 +656,83 @@ def export(
         None, "--output-dir", help="Where to write exported artifacts (default: <repo>/output)."
     ),
     include_proposal: bool = typer.Option(
-        False, "--include-proposal", help="Also export proposal.final.json if present."
+        False, "--include-proposal", help="Also export proposal.final.json."
+    ),
+    include_scorecard: bool = typer.Option(
+        False, "--include-scorecard", help="Also export scorecard.json."
+    ),
+    render_markdown: bool = typer.Option(
+        False,
+        "--render-markdown",
+        help="Also render report (and proposal if included) to .md in the bundle.",
     ),
     data_root: Optional[Path] = DataRootOpt,
     force: bool = ForceOpt,
     dry_run: bool = DryRunOpt,
 ):
-    """Export approved final artifacts.
+    """Export approved final artifacts into a delivery bundle.
 
-    Refuses to run unless ``report.final.json`` exists. v1 copies the
-    JSON artifacts as-is; rendering to PDF/DOCX belongs in
-    ``export.py`` in a later phase.
+    Delegates to ``export.build_export_bundle()``. Each final artifact is
+    schema-validated at export time before being copied. Original artifacts
+    are never modified. An ``export_manifest.json`` is always written to
+    the output directory.
+
+    Requires ``report.final.json`` to exist. Use ``audit review-status``
+    to check which draft\u2192final promotions are still pending.
     """
     paths = _resolve_paths(client, audit, data_root)
     _print_header("export", paths)
-    _require_artifacts([("report.final", paths.report_final)])
+
+    # Surface finalization hints before attempting the bundle.
+    status = E.check_finalization(paths)
+    if not status.ready_for_export:
+        typer.secho("blocked: report.final.json is missing.", fg=typer.colors.RED, err=True)
+        pending = status.pending_promotions
+        if pending:
+            typer.secho("pending promotions:", fg=typer.colors.YELLOW, err=True)
+            for p in pending:
+                typer.secho(f"  - {p}", fg=typer.colors.YELLOW, err=True)
+        typer.secho(
+            "next step: review report.draft.json and save as report.final.json.",
+            fg=typer.colors.YELLOW,
+            err=True,
+        )
+        raise typer.Exit(code=1)
 
     out_root = output_dir or (s.project_root() / "output")
     target_dir = out_root / paths.client_slug / paths.audit_id
 
-    to_copy: list[tuple[str, Path]] = [("report.final.json", paths.report_final)]
-    if include_proposal:
-        if not paths.proposal_final.is_file():
-            typer.secho(
-                "blocked: --include-proposal requested but proposal.final.json is missing.",
-                fg=typer.colors.RED,
-                err=True,
-            )
-            raise typer.Exit(code=1)
-        to_copy.append(("proposal.final.json", paths.proposal_final))
+    if dry_run:
+        typer.echo(f"[dry-run] would export to: {target_dir}")
+        typer.echo(f"[dry-run]   report.final.json")
+        if include_proposal:
+            typer.echo(f"[dry-run]   proposal.final.json")
+        if include_scorecard:
+            typer.echo(f"[dry-run]   scorecard.json")
+        if render_markdown:
+            typer.echo(f"[dry-run]   report.final.md")
+            if include_proposal:
+                typer.echo(f"[dry-run]   proposal.final.md")
+        typer.echo(f"[dry-run]   export_manifest.json")
+        return
 
-    for name, src in to_copy:
-        dest = target_dir / name
-        if dry_run:
-            typer.echo(f"[dry-run] would copy {src} -> {dest}")
-            continue
-        data = s.read_json(src)
-        s.write_json(dest, data, overwrite=force)
-        typer.secho(f"  exported: {dest}", fg=typer.colors.GREEN)
+    try:
+        bundle = E.build_export_bundle(
+            paths,
+            target_dir,
+            include_proposal=include_proposal,
+            include_scorecard=include_scorecard,
+            render_markdown=render_markdown,
+            overwrite=force,
+        )
+    except E.ExportError as e:
+        typer.secho(f"export failed: {e}", fg=typer.colors.RED, err=True)
+        raise typer.Exit(code=1) from e
+
+    for ef in bundle.files:
+        typer.secho(f"  exported: {target_dir / ef.name}", fg=typer.colors.GREEN)
+    typer.echo(f"  manifest: {bundle.manifest_path}")
+    typer.echo(f"  total files: {len(bundle.files)}")
 
 
 # ---------------------------------------------------------------------------
