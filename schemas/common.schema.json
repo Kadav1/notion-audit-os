@@ -1,0 +1,142 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://notion-audit-os.local/schemas/common.schema.json",
+  "title": "Common definitions",
+  "description": "Shared reusable definitions for notion-audit-os schemas.",
+  "type": "object",
+  "$defs": {
+    "non_empty_string": {
+      "type": "string",
+      "minLength": 1
+    },
+    "slug": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+      "minLength": 1,
+      "maxLength": 80
+    },
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "audit_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "client_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "finding_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "category_score": {
+      "description": "Per-category score: integer 0-4 or the literal string 'N/A'.",
+      "oneOf": [
+        { "type": "integer", "minimum": 0, "maximum": 4 },
+        { "type": "string", "const": "N/A" }
+      ]
+    },
+    "category_name": {
+      "type": "string",
+      "enum": [
+        "Business Fit",
+        "Workspace Structure",
+        "Database Design",
+        "Data Relationships",
+        "Workflow Clarity",
+        "Views and Dashboards",
+        "Intake and Requests",
+        "Governance and Adoption"
+      ]
+    },
+    "severity": {
+      "type": "string",
+      "enum": ["low", "medium", "high", "critical"]
+    },
+    "priority": {
+      "type": "string",
+      "enum": ["low", "medium", "high"]
+    },
+    "effort": {
+      "type": "string",
+      "enum": ["xs", "s", "m", "l", "xl"]
+    },
+    "audit_status": {
+      "type": "string",
+      "enum": [
+        "draft",
+        "intake",
+        "notes",
+        "findings",
+        "scoring",
+        "report",
+        "proposal",
+        "delivered",
+        "archived"
+      ]
+    },
+    "audit_type": {
+      "type": "string",
+      "enum": ["Core Audit v1.1"]
+    },
+    "notion_plan": {
+      "type": "string",
+      "enum": ["free", "plus", "business", "enterprise", "unknown"]
+    },
+    "recommended_package": {
+      "type": "string",
+      "enum": [
+        "Optimization Sprint",
+        "Partial Rebuild",
+        "Full Rebuild",
+        "Governance Add-on",
+        "Automation / AI Add-on",
+        "No immediate major project needed"
+      ]
+    },
+    "recommendation_type": {
+      "description": "Finding-level fix type label. Not the package field.",
+      "type": "string",
+      "enum": [
+        "Quick Fix",
+        "Structural Fix",
+        "Rebuild Item",
+        "Governance Fix",
+        "Training Fix",
+        "Future Enhancement"
+      ]
+    },
+    "source_type": {
+      "type": "string",
+      "enum": ["interview", "screenshare", "document", "form", "manual", "other"]
+    },
+    "output_format": {
+      "type": "string",
+      "enum": ["json", "markdown", "pdf", "docx"]
+    },
+    "maturity_band": {
+      "type": "string",
+      "enum": [
+        "Critical disorder",
+        "Fragile",
+        "Functional but weak",
+        "Solid",
+        "Strong"
+      ]
+    },
+    "finding_status": {
+      "type": "string",
+      "enum": ["draft", "reviewed", "approved", "rejected"]
+    }
+  }
+}

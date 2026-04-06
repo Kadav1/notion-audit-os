@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://notion-audit-os.local/schemas/intake.schema.json",
+  "title": "Intake",
+  "description": "Parsed intake payload for an audit.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["audit_id", "normalized_payload", "parsed_at"],
+  "properties": {
+    "audit_id": { "$ref": "common.schema.json#/$defs/audit_id" },
+    "raw_source_path": { "type": "string" },
+    "normalized_payload": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "client_name": { "type": "string" },
+        "team_size": { "type": "integer", "minimum": 1 },
+        "notion_plan": { "$ref": "common.schema.json#/$defs/notion_plan" },
+        "primary_use_cases": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "pain_points": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "current_notion_usage": { "type": "string" },
+        "desired_outcomes": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "workspace_owner": { "type": "string" },
+        "tools_in_use": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "ai_in_use": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "missing_fields": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "parsed_at": { "$ref": "common.schema.json#/$defs/timestamp" }
+  }
+}

@@ -1,0 +1,81 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://notion-audit-os.local/schemas/scorecard.schema.json",
+  "title": "Scorecard",
+  "description": "Deterministic Core Audit v1.1 scorecard. Category scores are 0-4 or 'N/A'.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "audit_id",
+    "categories",
+    "active_weights",
+    "weighted_points",
+    "overall_score",
+    "maturity_band",
+    "recommended_package"
+  ],
+  "properties": {
+    "audit_id": { "$ref": "common.schema.json#/$defs/audit_id" },
+    "categories": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "Business Fit",
+        "Workspace Structure",
+        "Database Design",
+        "Data Relationships",
+        "Workflow Clarity",
+        "Views and Dashboards",
+        "Intake and Requests",
+        "Governance and Adoption"
+      ],
+      "properties": {
+        "Business Fit": { "$ref": "common.schema.json#/$defs/category_score" },
+        "Workspace Structure": { "$ref": "common.schema.json#/$defs/category_score" },
+        "Database Design": { "$ref": "common.schema.json#/$defs/category_score" },
+        "Data Relationships": { "$ref": "common.schema.json#/$defs/category_score" },
+        "Workflow Clarity": { "$ref": "common.schema.json#/$defs/category_score" },
+        "Views and Dashboards": { "$ref": "common.schema.json#/$defs/category_score" },
+        "Intake and Requests": { "$ref": "common.schema.json#/$defs/category_score" },
+        "Governance and Adoption": { "$ref": "common.schema.json#/$defs/category_score" }
+      }
+    },
+    "active_weights": {
+      "description": "Weights actually used after N/A handling. Should sum to <= 100.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "Business Fit": { "type": "number", "minimum": 0, "maximum": 100 },
+        "Workspace Structure": { "type": "number", "minimum": 0, "maximum": 100 },
+        "Database Design": { "type": "number", "minimum": 0, "maximum": 100 },
+        "Data Relationships": { "type": "number", "minimum": 0, "maximum": 100 },
+        "Workflow Clarity": { "type": "number", "minimum": 0, "maximum": 100 },
+        "Views and Dashboards": { "type": "number", "minimum": 0, "maximum": 100 },
+        "Intake and Requests": { "type": "number", "minimum": 0, "maximum": 100 },
+        "Governance and Adoption": { "type": "number", "minimum": 0, "maximum": 100 }
+      }
+    },
+    "weighted_points": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "Business Fit": { "type": "number" },
+        "Workspace Structure": { "type": "number" },
+        "Database Design": { "type": "number" },
+        "Data Relationships": { "type": "number" },
+        "Workflow Clarity": { "type": "number" },
+        "Views and Dashboards": { "type": "number" },
+        "Intake and Requests": { "type": "number" },
+        "Governance and Adoption": { "type": "number" }
+      }
+    },
+    "overall_score": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 100
+    },
+    "maturity_band": { "$ref": "common.schema.json#/$defs/maturity_band" },
+    "recommended_package": { "$ref": "common.schema.json#/$defs/recommended_package" },
+    "rationale": { "type": "string" }
+  }
+}

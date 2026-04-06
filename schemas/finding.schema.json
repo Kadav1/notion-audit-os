@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://notion-audit-os.local/schemas/finding.schema.json",
+  "title": "Finding",
+  "description": "A single audit finding.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "finding_id",
+    "audit_id",
+    "category",
+    "title",
+    "observation",
+    "status"
+  ],
+  "properties": {
+    "finding_id": { "$ref": "common.schema.json#/$defs/finding_id" },
+    "audit_id": { "$ref": "common.schema.json#/$defs/audit_id" },
+    "category": { "$ref": "common.schema.json#/$defs/category_name" },
+    "title": { "$ref": "common.schema.json#/$defs/non_empty_string" },
+    "observation": { "type": "string" },
+    "evidence": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "why_it_matters": { "type": "string" },
+    "recommendation": { "type": "string" },
+    "severity": { "$ref": "common.schema.json#/$defs/severity" },
+    "priority": { "$ref": "common.schema.json#/$defs/priority" },
+    "effort": { "$ref": "common.schema.json#/$defs/effort" },
+    "quick_win": { "type": "boolean" },
+    "status": { "$ref": "common.schema.json#/$defs/finding_status" },
+    "owner_suggestion": { "type": "string" },
+    "recommended_package": { "$ref": "common.schema.json#/$defs/recommended_package" },
+    "recommendation_type": { "$ref": "common.schema.json#/$defs/recommendation_type" },
+    "notes": { "type": "string" }
+  }
+}

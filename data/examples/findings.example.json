@@ -1,0 +1,22 @@
+{
+  "audit_id": "aud_acme_2026_04",
+  "generated_at": "2026-04-06T10:00:00Z",
+  "findings": [
+    {
+      "finding_id": "fnd_acme_001",
+      "audit_id": "aud_acme_2026_04",
+      "category": "Database Design",
+      "title": "Tasks DB lacks a single source of truth",
+      "observation": "Three overlapping task databases exist with no canonical relation.",
+      "evidence": ["screenshot-2026-04-06-tasks-overlap.png"],
+      "why_it_matters": "Status reporting is unreliable and duplicates effort.",
+      "recommendation": "Consolidate into one Tasks DB with project relation.",
+      "severity": "high",
+      "priority": "high",
+      "effort": "m",
+      "quick_win": false,
+      "status": "draft",
+      "recommendation_type": "Structural Fix"
+    }
+  ]
+}

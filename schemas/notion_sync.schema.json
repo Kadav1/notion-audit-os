@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://notion-audit-os.local/schemas/notion_sync.schema.json",
+  "title": "Notion sync payload",
+  "description": "One-way local -> Notion publish payload. content_blocks is intentionally loose in v1.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["audit_id", "target_parent_id", "page_title", "content_blocks"],
+  "properties": {
+    "audit_id": { "$ref": "common.schema.json#/$defs/audit_id" },
+    "target_parent_id": { "$ref": "common.schema.json#/$defs/non_empty_string" },
+    "page_title": { "$ref": "common.schema.json#/$defs/non_empty_string" },
+    "content_blocks": {
+      "type": "array",
+      "items": { "type": "object" }
+    }
+  }
+}
