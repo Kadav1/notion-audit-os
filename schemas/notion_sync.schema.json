@@ -1,18 +1,21 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://notion-audit-os.local/schemas/notion_sync.schema.json",
-  "title": "Notion sync payload",
-  "description": "One-way local -> Notion publish payload. content_blocks is intentionally loose in v1.",
+  "title": "Notion sync log",
+  "description": "On-disk record written to notion_sync.json after each sync attempt (success or failure).",
   "type": "object",
   "additionalProperties": false,
-  "required": ["audit_id", "target_parent_id", "page_title", "content_blocks"],
+  "required": ["audit_id", "success", "synced_at", "target_parent_id", "page_title", "artifacts_synced"],
   "properties": {
-    "audit_id": { "$ref": "common.schema.json#/$defs/audit_id" },
-    "target_parent_id": { "$ref": "common.schema.json#/$defs/non_empty_string" },
-    "page_title": { "$ref": "common.schema.json#/$defs/non_empty_string" },
-    "content_blocks": {
-      "type": "array",
-      "items": { "type": "object" }
-    }
+    "audit_id":          { "$ref": "common.schema.json#/$defs/audit_id" },
+    "success":           { "type": "boolean" },
+    "synced_at":         { "type": "string", "format": "date-time" },
+    "target_parent_id":  { "$ref": "common.schema.json#/$defs/non_empty_string" },
+    "page_title":        { "$ref": "common.schema.json#/$defs/non_empty_string" },
+    "page_id":           { "type": ["string", "null"] },
+    "page_url":          { "type": ["string", "null"] },
+    "artifacts_synced":  { "type": "array", "items": { "type": "string" } },
+    "error":             { "type": ["string", "null"] },
+    "message":           { "type": ["string", "null"] }
   }
 }

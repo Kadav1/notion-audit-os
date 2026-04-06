@@ -804,6 +804,20 @@ def sync_notion(
         )
     except NS.SyncPrerequisiteError as exc:
         typer.secho(f"blocked: {exc}", fg=typer.colors.RED, err=True)
+        fail_result = NS.SyncResult(
+            audit_id=paths.audit_id,
+            success=False,
+            synced_at=datetime.now(timezone.utc),
+            target_parent_id=config.parent_page_id,
+            page_title="(blocked)",
+            error=str(exc),
+            message="Sync blocked: required artifact missing.",
+        )
+        NS.write_sync_log(paths, fail_result)
+        typer.secho(
+            f"  failure log written: {paths.notion_sync_file}",
+            fg=typer.colors.YELLOW,
+        )
         raise typer.Exit(code=1) from exc
     except NS.NotionAPIError as exc:
         typer.secho(f"Notion API error: {exc}", fg=typer.colors.RED, err=True)

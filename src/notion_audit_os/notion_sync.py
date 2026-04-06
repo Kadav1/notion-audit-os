@@ -119,22 +119,22 @@ def _rich_text(content: str) -> list[dict]:
 
 def _heading_2(text: str) -> dict:
     return {"object": "block", "type": "heading_2",
-            "heading_2": {"rich_text": _rich_text(text[:_RICH_TEXT_LIMIT])}}
+            "heading_2": {"rich_text": _rich_text(text)}}
 
 
 def _heading_3(text: str) -> dict:
     return {"object": "block", "type": "heading_3",
-            "heading_3": {"rich_text": _rich_text(text[:_RICH_TEXT_LIMIT])}}
+            "heading_3": {"rich_text": _rich_text(text)}}
 
 
 def _paragraph(text: str) -> dict:
     return {"object": "block", "type": "paragraph",
-            "paragraph": {"rich_text": _rich_text(text[:_RICH_TEXT_LIMIT])}}
+            "paragraph": {"rich_text": _rich_text(text)}}
 
 
 def _bullet(text: str) -> dict:
     return {"object": "block", "type": "bulleted_list_item",
-            "bulleted_list_item": {"rich_text": _rich_text(text[:_RICH_TEXT_LIMIT])}}
+            "bulleted_list_item": {"rich_text": _rich_text(text)}}
 
 
 def _divider() -> dict:
@@ -176,24 +176,12 @@ def _truncate_blocks(blocks: list[dict]) -> list[dict]:
 # ---------------------------------------------------------------------------
 
 
-def convert_report_to_blocks(report: M.Report) -> list[dict]:
-    """Convert an approved :class:`models.Report` to a Notion block list.
+def _build_report_blocks(report: M.Report) -> list[dict]:
+    """Build all Notion blocks for a report without applying the block limit.
 
-    Converts each section to the appropriate Notion block types. No content
-    is added, removed, or reworded \u2014 the conversion is purely structural.
-
-    Section mapping:
-
-    * ``executive_summary`` \u2192 heading_2 + paragraph(s)
-    * ``maturity_summary`` \u2192 heading_2 + paragraph(s)
-    * ``key_findings`` \u2192 heading_2 + bulleted_list_items
-    * ``scorecard_summary`` \u2192 heading_2 + paragraph(s)
-    * ``roadmap`` \u2192 heading_2 + heading_3 per phase + bullets
-    * ``recommended_next_step`` \u2192 heading_2 + paragraph(s)
-    * ``appendix`` \u2192 heading_2 + paragraph(s) if present
-
-    Returns at most :data:`_MAX_BLOCKS` blocks (Notion API create limit).
-    A truncation note is appended if content is cut.
+    Internal helper shared by :func:`convert_report_to_blocks` (standalone
+    use) and :func:`sync_audit` (combined with proposal blocks). Truncation
+    is the caller's responsibility so combined content is capped only once.
     """
     sec = report.sections
     blocks: list[dict] = []
@@ -237,7 +225,19 @@ def convert_report_to_blocks(report: M.Report) -> list[dict]:
         blocks.append(_heading_2("Appendix"))
         blocks.extend(_prose_blocks(sec.appendix))
 
-    return _truncate_blocks(blocks)
+    return blocks
+
+
+def convert_report_to_blocks(report: M.Report) -> list[dict]:
+    """Convert an approved :class:`models.Report` to a Notion block list.
+
+    Converts each section to the appropriate Notion block types. No content
+    is added, removed, or reworded \u2014 the conversion is purely structural.
+
+    Returns at most :data:`_MAX_BLOCKS` blocks (Notion API create limit).
+    A truncation note is appended if content is cut.
+    """
+    return _truncate_blocks(_build_report_blocks(report))
 
 
 def convert_proposal_to_blocks(proposal: M.Proposal) -> list[dict]:
@@ -347,7 +347,7 @@ class NotionAPIAdapter:
 # ---------------------------------------------------------------------------
 
 
-@dataclass
+@dataclass(frozen=True)
 class SyncResult:
     """Structured result from one sync operation.
 
@@ -480,16 +480,19 @@ def sync_audit(
     page_title = f"{subject} \u2014 Audit Report"
 
     # --- Build content blocks ---
-    blocks = convert_report_to_blocks(report_obj)
+    # Use _build_report_blocks (not convert_report_to_blocks) so that
+    # report and proposal blocks are combined before the single truncation
+    # pass. convert_report_to_blocks truncates independently and would
+    # silently drop all proposal blocks if the report fills 100 slots first.
+    blocks = _build_report_blocks(report_obj)
     artifacts = ["report.final.json"]
 
     if proposal_obj is not None:
         proposal_blocks = convert_proposal_to_blocks(proposal_obj)
-        # Combine: proposal blocks are appended after the report blocks,
-        # but the combined list must still respect the 100-block limit.
-        combined = blocks + proposal_blocks
-        blocks = _truncate_blocks(combined)
+        blocks = blocks + proposal_blocks
         artifacts.append("proposal.final.json")
+
+    blocks = _truncate_blocks(blocks)
 
     # --- Publish ---
     if adapter is None:
