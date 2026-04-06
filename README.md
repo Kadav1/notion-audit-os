@@ -109,7 +109,32 @@ pip install -e ".[dev]"
 ## Run
 
 ```
-audit
+audit --help
 ```
 
-Phase I prints a version banner. Real commands arrive in later phases.
+The CLI exposes the locked v1 commands: `init`, `intake`,
+`normalize-notes`, `draft-findings`, `review-status`, `score`,
+`report`, `proposal`, `export`, `sync-notion`, `validate`, `info`.
+
+Workflow:
+
+```
+audit init           --client acme --audit aud_001 --client-name "Acme Co"
+audit intake         --client acme --audit aud_001 --input intake.json
+audit normalize-notes --client acme --audit aud_001 --input notes.json --name session1
+audit draft-findings --client acme --audit aud_001 --input findings.json
+# operator reviews findings.draft.json, then saves the reviewed version
+# as findings.final.json (the CLI never auto-promotes drafts)
+audit score          --client acme --audit aud_001 --scores scores.json
+audit report         --client acme --audit aud_001
+# operator reviews report.draft.json, then saves it as report.final.json
+audit export         --client acme --audit aud_001
+```
+
+`audit review-status` shows what artifacts exist and what is blocking
+the next stage. Each command refuses to run if its review gate is
+unmet, with a clear message explaining what is missing. v1 backends
+for intake parsing, notes normalization, findings drafting, report
+prose, and Notion sync are intentionally minimal — the CLI accepts
+pre-shaped JSON inputs and validates them through the schema/model
+contracts; richer parsing and rendering land in later phases.
