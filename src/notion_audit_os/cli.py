@@ -38,7 +38,10 @@ from typing import Optional
 import typer
 
 from . import __version__
+from . import findings as F
+from . import intake as I
 from . import models as M
+from . import notes as N
 from . import scoring as sc
 from . import storage as s
 
@@ -247,18 +250,18 @@ def intake(
     force: bool = ForceOpt,
     dry_run: bool = DryRunOpt,
 ):
-    """Load and validate a normalized intake JSON file.
+    """Load and normalize an intake source.
 
-    v1 expects the input already in :class:`models.Intake` shape. Raw
-    parsing (interview transcripts, forms, etc.) belongs in
-    ``intake.py`` in a later phase.
+    Accepts either a pre-shaped JSON file (:class:`models.Intake`) or a
+    Markdown/text intake document. The format is detected by file
+    extension; the parser in ``intake.py`` handles ``.md``/``.txt``.
     """
     paths = _resolve_paths(client, audit, data_root)
     _print_header("intake", paths)
     _require_artifacts([("audit", paths.audit_file)])
 
-    data = s.read_json(input)
-    intake_obj = M.Intake.model_validate(data)
+    intake_obj = I.load_intake_file(input, audit_id=audit)
+    data = intake_obj.model_dump(by_alias=True, mode="json", exclude_none=True)
     s.get_schema_registry().validate("intake.schema.json", data)
 
     if intake_obj.missing_fields:
@@ -296,13 +299,18 @@ def normalize_notes(
     force: bool = ForceOpt,
     dry_run: bool = DryRunOpt,
 ):
-    """Validate and store a normalized notes artifact for an audit."""
+    """Normalize and store a notes artifact for an audit.
+
+    Accepts either a pre-shaped JSON file (:class:`models.Notes`) or a
+    raw Markdown/text notes document. The format is detected by file
+    extension; the parser in ``notes.py`` handles ``.md``/``.txt``.
+    """
     paths = _resolve_paths(client, audit, data_root)
     _print_header("normalize-notes", paths)
     _require_artifacts([("intake", paths.intake_file)])
 
-    data = s.read_json(input)
-    notes_obj = M.Notes.model_validate(data)
+    notes_obj = N.load_notes_file(input, audit_id=audit)
+    data = notes_obj.model_dump(by_alias=True, mode="json", exclude_none=True)
     s.get_schema_registry().validate("notes.schema.json", data)
 
     typer.echo(f"  source_type: {notes_obj.source_type}")
@@ -342,18 +350,21 @@ def draft_findings(
     force: bool = ForceOpt,
     dry_run: bool = DryRunOpt,
 ):
-    """Validate and write a draft findings collection.
+    """Draft and write a findings collection.
 
-    v1 accepts pre-shaped findings JSON. LLM drafting belongs in
-    ``findings.py`` / ``llm.py`` in a later phase.
+    Accepts either a pre-shaped JSON file (:class:`models.FindingsCollection`)
+    or a raw notes source (``.md``/``.txt``); in the latter case the
+    deterministic drafter in ``findings.py`` builds findings from the
+    parsed notes, keeping observation/evidence/why_it_matters/recommendation
+    structurally distinct.
     """
     paths = _resolve_paths(client, audit, data_root)
     _print_header("draft-findings", paths)
     if not paths.notes_dir.is_dir() or not list(paths.notes_dir.glob("*.json")):
         _require_artifacts([("notes/* (any normalized notes file)", paths.notes_dir)])
 
-    data = s.read_json(input)
-    fc = M.FindingsCollection.model_validate(data)
+    fc = F.load_findings_input(input, audit_id=audit)
+    data = fc.model_dump(by_alias=True, mode="json", exclude_none=True)
     s.get_schema_registry().validate("findings.schema.json", data)
 
     by_cat: dict[str, int] = {}

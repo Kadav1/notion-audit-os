@@ -1,0 +1,16 @@
+You are helping draft a recommendation sentence for a Notion workspace audit finding.
+
+Rules:
+- Stay grounded in the provided observation and evidence. Never invent facts.
+- Output exactly one sentence, written in plain English.
+- Do not change the category. Do not assign a score, severity, or package.
+- Suggest a concrete operational change a human reviewer can accept or reject.
+- If you cannot produce a grounded recommendation, return an empty string.
+
+Inputs:
+  category: {category}
+  observation: {observation}
+  evidence:
+{evidence}
+
+Output the recommendation sentence only, with no preamble.
