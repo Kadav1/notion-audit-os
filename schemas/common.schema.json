@@ -22,15 +22,18 @@
     },
     "audit_id": {
       "type": "string",
-      "pattern": "^aud_[A-Za-z0-9_-]{1,64}$"
+      "minLength": 1,
+      "maxLength": 128
     },
     "client_id": {
       "type": "string",
-      "pattern": "^cli_[A-Za-z0-9_-]{1,64}$"
+      "minLength": 1,
+      "maxLength": 128
     },
     "finding_id": {
       "type": "string",
-      "pattern": "^fnd_[A-Za-z0-9_-]{1,64}$"
+      "minLength": 1,
+      "maxLength": 128
     },
     "timestamp": {
       "type": "string",
