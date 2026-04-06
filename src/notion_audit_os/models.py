@@ -22,7 +22,6 @@ from typing import Any, Literal, Union
 from pydantic import (
     BaseModel,
     ConfigDict,
-    EmailStr,
     Field,
     field_validator,
     model_validator,
@@ -218,7 +217,7 @@ def validate_slug(value: str) -> str:
 
 class PrimaryContact(StrictBase):
     name: str | None = None
-    email: EmailStr | None = None
+    email: str | None = None
     role: str | None = None
 
 
@@ -240,7 +239,7 @@ class Client(StrictBase):
 
 class AuditLead(StrictBase):
     name: str | None = None
-    email: EmailStr | None = None
+    email: str | None = None
 
 
 class Audit(StrictBase):
