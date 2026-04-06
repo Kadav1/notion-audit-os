@@ -69,6 +69,24 @@ The Pydantic models added in a later phase **must align with these
 schemas**. If a model and a schema diverge, the schema is the contract
 to fix against — not the other way around.
 
+## Storage and validation layer
+
+`src/notion_audit_os/storage.py` is the only module that touches the
+filesystem for audit artifacts. It provides:
+
+- safe JSON / Markdown / text read+write helpers (refuses to clobber
+  unless `overwrite=True`)
+- a `SchemaRegistry` that loads every `schemas/*.schema.json` into a
+  `referencing.Registry`, so cross-file `$ref`s like
+  `common.schema.json#/$defs/audit_id` resolve locally with no network
+- `load_model(path, Model, schema_name=...)` and `dump_model(...)` so
+  any artifact can be validated against **both** its JSON Schema **and**
+  its Pydantic model in one call
+- `AuditPaths` + `ensure_audit_scaffold()` for the standard
+  `data/clients/<slug>/audits/<audit_id>/` layout, with explicit
+  `findings.draft.json` / `findings.final.json` (and report/proposal
+  draft/final) artifact names to support visible review gates
+
 ## Layout
 
 ```
