@@ -22,7 +22,9 @@ classifiers = [
 ]
 
 # v1 is intentionally minimal. Add real deps in later phases.
-dependencies = []
+dependencies = [
+    "pydantic>=2.6",
+]
 
 [project.optional-dependencies]
 dev = [
