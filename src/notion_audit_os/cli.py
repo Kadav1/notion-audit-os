@@ -43,6 +43,7 @@ from . import findings as F
 from . import intake as I
 from . import models as M
 from . import notes as N
+from . import notion_sync as NS
 from . import proposal as P
 from . import reporting as R
 from . import scoring as sc
@@ -744,24 +745,90 @@ def export(
 def sync_notion(
     client: str = ClientOpt,
     audit: str = AuditOpt,
+    token: Optional[str] = typer.Option(
+        None,
+        "--token",
+        help="Notion API integration token (or NOTION_API_TOKEN env var).",
+        envvar="NOTION_API_TOKEN",
+    ),
+    parent_id: Optional[str] = typer.Option(
+        None,
+        "--parent-id",
+        help="Notion parent page ID (or NOTION_PARENT_PAGE_ID env var).",
+        envvar="NOTION_PARENT_PAGE_ID",
+    ),
+    include_proposal: bool = typer.Option(
+        False, "--include-proposal", help="Also publish proposal.final.json."
+    ),
     data_root: Optional[Path] = DataRootOpt,
 ):
-    """Publish approved final artifacts to Notion. (v1: not yet implemented.)
+    """Publish approved final artifacts to Notion (one-way).
 
-    The gate check still runs so this command can never accidentally
-    publish a draft. The actual Notion adapter lives in
-    ``notion_sync.py`` and is intentionally a stub in v1.
+    Requires ``report.final.json`` to exist. Delegates to
+    ``notion_sync.sync_audit()``. The sync result is written to
+    ``notion_sync.json`` in the audit directory.
+
+    Credentials are read from ``--token`` / ``--parent-id`` flags or
+    from the ``NOTION_API_TOKEN`` / ``NOTION_PARENT_PAGE_ID`` environment
+    variables.
+
+    Sync is create-only in v1: each call creates a new Notion page.
+    Local canonical artifacts are never modified by sync.
     """
     paths = _resolve_paths(client, audit, data_root)
     _print_header("sync-notion", paths)
-    _require_artifacts([("report.final", paths.report_final)])
-    typer.secho(
-        "sync-notion is intentionally not implemented in v1. The Notion "
-        "adapter (notion_sync.py) is a stub. v1 is local-first; Notion "
-        "publish lands in a later phase.",
-        fg=typer.colors.YELLOW,
-    )
-    raise typer.Exit(code=2)
+
+    # Resolve configuration before the gate check so config errors surface
+    # with a clear message.
+    try:
+        config = NS.load_sync_config(token=token, parent_page_id=parent_id)
+    except NS.SyncConfigError as exc:
+        typer.secho(f"configuration error: {exc}", fg=typer.colors.RED, err=True)
+        raise typer.Exit(code=1) from exc
+
+    # Gate check: report.final.json must exist.
+    if not paths.report_final.is_file():
+        typer.secho(
+            "blocked: report.final.json is missing. "
+            "Review report.draft.json and promote it before syncing.",
+            fg=typer.colors.RED,
+            err=True,
+        )
+        raise typer.Exit(code=1)
+
+    try:
+        result = NS.sync_audit(
+            paths,
+            config,
+            include_proposal=include_proposal,
+        )
+    except NS.SyncPrerequisiteError as exc:
+        typer.secho(f"blocked: {exc}", fg=typer.colors.RED, err=True)
+        raise typer.Exit(code=1) from exc
+    except NS.NotionAPIError as exc:
+        typer.secho(f"Notion API error: {exc}", fg=typer.colors.RED, err=True)
+        # Write failure log so the operator has a record.
+        fail_result = NS.SyncResult(
+            audit_id=paths.audit_id,
+            success=False,
+            synced_at=datetime.now(timezone.utc),
+            target_parent_id=config.parent_page_id,
+            page_title="(failed)",
+            error=str(exc),
+            message="Sync failed due to Notion API error.",
+        )
+        NS.write_sync_log(paths, fail_result)
+        typer.secho(
+            f"  failure log written: {paths.notion_sync_file}",
+            fg=typer.colors.YELLOW,
+        )
+        raise typer.Exit(code=1) from exc
+
+    # Success path.
+    NS.write_sync_log(paths, result)
+    typer.secho(f"  page created: {result.page_url or result.page_id}", fg=typer.colors.GREEN)
+    typer.echo(f"  artifacts synced: {', '.join(result.artifacts_synced)}")
+    typer.echo(f"  sync log: {paths.notion_sync_file}")
 
 
 # ---------------------------------------------------------------------------
