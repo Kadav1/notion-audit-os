@@ -1,0 +1,64 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://notion-audit-os.local/schemas/report.schema.json",
+  "title": "Report",
+  "description": "Structured report metadata and section content. Not a markdown AST.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["audit_id", "template_version", "output_format", "generated_at", "sections"],
+  "properties": {
+    "audit_id": { "$ref": "common.schema.json#/$defs/audit_id" },
+    "template_version": { "$ref": "common.schema.json#/$defs/non_empty_string" },
+    "output_format": { "$ref": "common.schema.json#/$defs/output_format" },
+    "path": { "type": "string" },
+    "generated_at": { "$ref": "common.schema.json#/$defs/timestamp" },
+    "sections": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "executive_summary",
+        "maturity_summary",
+        "key_findings",
+        "scorecard_summary",
+        "roadmap",
+        "recommended_next_step"
+      ],
+      "properties": {
+        "executive_summary": { "type": "string" },
+        "maturity_summary": { "type": "string" },
+        "key_findings": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["title"],
+            "properties": {
+              "finding_id": { "$ref": "common.schema.json#/$defs/finding_id" },
+              "title": { "type": "string" },
+              "summary": { "type": "string" }
+            }
+          }
+        },
+        "scorecard_summary": { "type": "string" },
+        "roadmap": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["phase", "summary"],
+            "properties": {
+              "phase": { "type": "string" },
+              "summary": { "type": "string" },
+              "items": {
+                "type": "array",
+                "items": { "type": "string" }
+              }
+            }
+          }
+        },
+        "recommended_next_step": { "type": "string" },
+        "appendix": { "type": "string" }
+      }
+    }
+  }
+}

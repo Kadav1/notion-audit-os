@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://notion-audit-os.local/schemas/findings.schema.json",
+  "title": "Findings (wrapper object)",
+  "description": "Canonical findings storage: a top-level object with a 'findings' array. Locked: never a bare array.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["findings"],
+  "properties": {
+    "audit_id": { "$ref": "common.schema.json#/$defs/audit_id" },
+    "generated_at": { "$ref": "common.schema.json#/$defs/timestamp" },
+    "findings": {
+      "type": "array",
+      "items": { "$ref": "finding.schema.json" }
+    }
+  }
+}

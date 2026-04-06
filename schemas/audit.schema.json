@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://notion-audit-os.local/schemas/audit.schema.json",
+  "title": "Audit",
+  "description": "A single audit engagement record.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["audit_id", "client_id", "audit_type", "status", "created_at"],
+  "properties": {
+    "audit_id": { "$ref": "common.schema.json#/$defs/audit_id" },
+    "client_id": { "$ref": "common.schema.json#/$defs/client_id" },
+    "audit_type": { "$ref": "common.schema.json#/$defs/audit_type" },
+    "status": { "$ref": "common.schema.json#/$defs/audit_status" },
+    "lead": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "name": { "type": "string" },
+        "email": { "type": "string", "format": "email" }
+      }
+    },
+    "scope_notes": { "type": "string" },
+    "plan_constraints": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "created_at": { "$ref": "common.schema.json#/$defs/timestamp" },
+    "updated_at": { "$ref": "common.schema.json#/$defs/timestamp" }
+  }
+}

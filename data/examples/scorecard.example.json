@@ -1,0 +1,35 @@
+{
+  "audit_id": "aud_acme_2026_04",
+  "categories": {
+    "Business Fit": 3,
+    "Workspace Structure": 2,
+    "Database Design": 1,
+    "Data Relationships": 2,
+    "Workflow Clarity": 2,
+    "Views and Dashboards": 3,
+    "Intake and Requests": "N/A",
+    "Governance and Adoption": 2
+  },
+  "active_weights": {
+    "Business Fit": 15,
+    "Workspace Structure": 12,
+    "Database Design": 15,
+    "Data Relationships": 12,
+    "Workflow Clarity": 15,
+    "Views and Dashboards": 10,
+    "Governance and Adoption": 11
+  },
+  "weighted_points": {
+    "Business Fit": 11.25,
+    "Workspace Structure": 6.0,
+    "Database Design": 3.75,
+    "Data Relationships": 6.0,
+    "Workflow Clarity": 7.5,
+    "Views and Dashboards": 7.5,
+    "Governance and Adoption": 5.5
+  },
+  "overall_score": 53,
+  "maturity_band": "Functional but weak",
+  "recommended_package": "Partial Rebuild",
+  "rationale": "Core data model needs consolidation before optimization sprints will stick."
+}

@@ -44,12 +44,38 @@ names, locked field names, locked CLI shape, and locked module
 boundaries. Any coding assistant working on this repo must read it
 first and must not silently override locked rules.
 
+## JSON Schemas — the external contract
+
+JSON Schemas are the **external contract** for every local artifact the
+audit engine reads or writes. They live in `schemas/` and use JSON
+Schema draft 2020-12. Highlights:
+
+- `common.schema.json` — shared `$defs` (ids, timestamps, locked enums,
+  category names, category score, recommended package, etc.)
+- `client.schema.json`, `audit.schema.json`, `intake.schema.json`,
+  `notes.schema.json`
+- `finding.schema.json` and `findings.schema.json` (the **wrapper
+  object** form: `{"findings": [...]}` — never a bare array)
+- `scorecard.schema.json` (supports `0–4` and `"N/A"` per category)
+- `report.schema.json`, `proposal.schema.json`, `notion_sync.schema.json`
+
+Cross-file `$ref`s use relative file URIs (e.g.
+`common.schema.json#/$defs/audit_id`). When wiring validation in
+Phase III, the storage layer should register all schemas in a
+`referencing.Registry` (or equivalent) so resolution works without
+network access. Minimal example artifacts live under `data/examples/`.
+
+The Pydantic models added in a later phase **must align with these
+schemas**. If a model and a schema diverge, the schema is the contract
+to fix against — not the other way around.
+
 ## Layout
 
 ```
 docs/                       # LOCKED_CONTEXT.md and other docs
 src/notion_audit_os/        # Python package (modules per locked boundaries)
 schemas/                    # JSON Schemas (external contract)
+data/examples/              # Minimal example artifacts
 templates/                  # Report/proposal templates
 prompts/                    # LLM prompts
 tests/                      # Pytest suite

@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://notion-audit-os.local/schemas/notes.schema.json",
+  "title": "Notes",
+  "description": "Normalized notes record for an audit.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["audit_id", "source_type", "normalized_summary", "generated_at"],
+  "properties": {
+    "audit_id": { "$ref": "common.schema.json#/$defs/audit_id" },
+    "source_type": { "$ref": "common.schema.json#/$defs/source_type" },
+    "raw_path": { "type": "string" },
+    "normalized_summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "pain_points": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "observations": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "candidate_categories": {
+          "type": "array",
+          "items": { "$ref": "common.schema.json#/$defs/category_name" }
+        },
+        "uncertainties": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "gaps": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "generated_at": { "$ref": "common.schema.json#/$defs/timestamp" }
+  }
+}
