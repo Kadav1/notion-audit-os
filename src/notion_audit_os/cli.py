@@ -42,6 +42,8 @@ from . import findings as F
 from . import intake as I
 from . import models as M
 from . import notes as N
+from . import proposal as P
+from . import reporting as R
 from . import scoring as sc
 from . import storage as s
 
@@ -494,15 +496,21 @@ def report(
     client: str = ClientOpt,
     audit: str = AuditOpt,
     template_version: str = typer.Option("v1", "--template", help="Report template version."),
+    also_markdown: bool = typer.Option(
+        False, "--also-markdown", help="Also write a Markdown draft alongside the JSON."
+    ),
     data_root: Optional[Path] = DataRootOpt,
     force: bool = ForceOpt,
     dry_run: bool = DryRunOpt,
 ):
-    """Generate a draft report skeleton from the scorecard.
+    """Generate a structured draft report from the scorecard and findings.
 
-    v1 produces a minimal structured Report. Rich prose belongs in
-    ``reporting.py`` in a later phase. Output is always a draft;
-    promotion to ``report.final.json`` is a deliberate human action.
+    Delegates to ``reporting.assemble_report()``. All section text is
+    derived from the approved scorecard and findings \u2014 no content is
+    invented. Output is always a draft; promotion to ``report.final.json``
+    is a deliberate human action.
+
+    Pass ``--also-markdown`` to additionally write ``report.draft.md``.
     """
     paths = _resolve_paths(client, audit, data_root)
     _print_header("report", paths)
@@ -520,30 +528,27 @@ def report(
         paths.findings_final, M.FindingsCollection, schema_name="findings.schema.json"
     )
 
-    key = [
-        M.KeyFindingRef(finding_id=f.finding_id, title=f.title)
-        for f in fc.findings[:5]
-    ]
-    sections = M.ReportSections(
-        executive_summary=(
-            f"Audit {audit} for client {client}: overall score {card.overall_score} "
-            f"({card.maturity_band})."
-        ),
-        maturity_summary=f"Maturity band: {card.maturity_band}.",
-        key_findings=key,
-        scorecard_summary=card.rationale or "(no rationale)",
-        roadmap=[],
-        recommended_next_step=f"Recommended package: {card.recommended_package}.",
-        appendix=None,
-    )
-    report_obj = M.Report(
-        audit_id=audit,
+    # Load intake for client name context if it exists (optional).
+    intake_obj: M.Intake | None = None
+    if paths.intake_file.is_file():
+        try:
+            intake_obj = s.load_model(
+                paths.intake_file, M.Intake, schema_name="intake.schema.json"
+            )
+        except s.StorageError:
+            pass  # Intake context is optional; don't block report generation.
+
+    report_obj = R.assemble_report(
+        audit,
+        card,
+        fc,
+        intake=intake_obj,
         template_version=template_version,
-        output_format=M.OutputFormat.JSON,
-        path=str(paths.report_draft),
-        generated_at=datetime.now(timezone.utc),
-        sections=sections,
     )
+
+    typer.echo(f"  key_findings: {len(report_obj.sections.key_findings)}")
+    typer.echo(f"  roadmap_phases: {len(report_obj.sections.roadmap)}")
+
     _write_or_block(
         paths.report_draft,
         report_obj.model_dump(by_alias=True, mode="json", exclude_none=True),
@@ -551,8 +556,18 @@ def report(
         dry_run=dry_run,
         label="report.draft",
     )
+
+    if also_markdown:
+        md_path = paths.audit_dir / "report.draft.md"
+        md_content = R.render_report_markdown(report_obj)
+        if dry_run:
+            typer.echo(f"[dry-run] would write report.draft.md: {md_path}")
+        else:
+            md_path.write_text(md_content, encoding="utf-8")
+            typer.secho(f"  wrote report.draft.md: {md_path}", fg=typer.colors.GREEN)
+
     typer.secho(
-        "review reminder: this is a structural draft. Edit it, then save the "
+        "review reminder: this is a structured draft. Edit it, then save the "
         "reviewed version as report.final.json before `audit export`.",
         fg=typer.colors.YELLOW,
     )
@@ -567,11 +582,22 @@ def report(
 def proposal(
     client: str = ClientOpt,
     audit: str = AuditOpt,
+    also_markdown: bool = typer.Option(
+        False, "--also-markdown", help="Also write a Markdown draft alongside the JSON."
+    ),
     data_root: Optional[Path] = DataRootOpt,
     force: bool = ForceOpt,
     dry_run: bool = DryRunOpt,
 ):
-    """Generate a draft proposal aligned with the recommended package."""
+    """Generate a draft proposal aligned with the recommended package.
+
+    Delegates to ``proposal.assemble_proposal()``. Deliverables and
+    exclusions are drawn from the locked package-to-scope table \u2014 no
+    content is invented. ``recommended_package`` propagates unchanged from
+    the scorecard.
+
+    Pass ``--also-markdown`` to additionally write ``proposal.draft.md``.
+    """
     paths = _resolve_paths(client, audit, data_root)
     _print_header("proposal", paths)
     _require_artifacts(
@@ -584,16 +610,16 @@ def proposal(
     card = s.load_model(
         paths.scorecard_file, M.Scorecard, schema_name="scorecard.schema.json"
     )
-    proposal_obj = M.Proposal(
-        audit_id=audit,
-        recommended_package=M.RecommendedPackage(card.recommended_package),
-        scope_summary=(
-            f"Engagement aligned with the recommended package: {card.recommended_package}."
-        ),
-        deliverables=[],
-        exclusions=[],
-        generated_at=datetime.now(timezone.utc),
+    fc = s.load_model(
+        paths.findings_final, M.FindingsCollection, schema_name="findings.schema.json"
     )
+
+    proposal_obj = P.assemble_proposal(audit, card, fc)
+
+    typer.echo(f"  recommended_package: {proposal_obj.recommended_package}")
+    typer.echo(f"  deliverables: {len(proposal_obj.deliverables)}")
+    typer.echo(f"  exclusions: {len(proposal_obj.exclusions)}")
+
     _write_or_block(
         paths.proposal_draft,
         proposal_obj.model_dump(by_alias=True, mode="json", exclude_none=True),
@@ -601,8 +627,18 @@ def proposal(
         dry_run=dry_run,
         label="proposal.draft",
     )
+
+    if also_markdown:
+        md_path = paths.audit_dir / "proposal.draft.md"
+        md_content = P.render_proposal_markdown(proposal_obj)
+        if dry_run:
+            typer.echo(f"[dry-run] would write proposal.draft.md: {md_path}")
+        else:
+            md_path.write_text(md_content, encoding="utf-8")
+            typer.secho(f"  wrote proposal.draft.md: {md_path}", fg=typer.colors.GREEN)
+
     typer.echo(
-        "next: edit deliverables/exclusions in the draft, then save as proposal.final.json."
+        "next: review the proposal draft, then save as proposal.final.json."
     )
 
 
