@@ -448,12 +448,19 @@ class Proposal(StrictBase):
     generated_at: datetime
 
 
-class NotionSyncPayload(StrictBase):
+class SyncLog(StrictBase):
+    """On-disk record written to ``notion_sync.json`` after each sync attempt."""
+
     audit_id: str = Field(min_length=1, max_length=128)
+    success: bool
+    synced_at: datetime
     target_parent_id: str = Field(min_length=1)
     page_title: str = Field(min_length=1)
-    # Loose by design in v1.
-    content_blocks: list[dict[str, Any]] = Field(default_factory=list)
+    page_id: str | None = None
+    page_url: str | None = None
+    artifacts_synced: list[str] = Field(default_factory=list)
+    error: str | None = None
+    message: str | None = None
 
 
 # ---------------------------------------------------------------------------
@@ -520,6 +527,6 @@ __all__ = [
     "ReportSections",
     "Report",
     "Proposal",
-    "NotionSyncPayload",
+    "SyncLog",
     "AuditContext",
 ]

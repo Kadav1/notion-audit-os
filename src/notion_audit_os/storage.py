@@ -372,7 +372,7 @@ ARTIFACT_REGISTRY: dict[str, tuple[type[BaseModel], str]] = {
     "scorecard.schema.json": (M.Scorecard, "scorecard_file"),
     "report.schema.json": (M.Report, "report_final"),
     "proposal.schema.json": (M.Proposal, "proposal_final"),
-    "notion_sync.schema.json": (M.NotionSyncPayload, "notion_sync_file"),
+    "notion_sync.schema.json": (M.SyncLog, "notion_sync_file"),
 }
 
 

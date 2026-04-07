@@ -1,6 +1,19 @@
-"""Configuration and environment helpers.
+"""Configuration and environment helpers for notion-audit-os.
 
-Phase I placeholder. Real config loading lands in a later phase.
+Local paths and project-level constants live here. Module-specific
+configuration (e.g. Notion sync credentials) lives in the relevant
+module (``notion_sync.py``) to keep this file minimal.
+
+Environment variables used by the project:
+
+``NOTION_API_TOKEN``
+    Notion integration secret. Used by ``notion_sync.load_sync_config()``.
+
+``NOTION_PARENT_PAGE_ID``
+    Notion parent page ID to publish under.
+    Used by ``notion_sync.load_sync_config()``.
+
+Secrets are never hardcoded here. Pass them via environment or CLI flags.
 """
 
 from pathlib import Path

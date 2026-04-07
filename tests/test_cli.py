@@ -228,7 +228,13 @@ def test_export_blocks_when_report_final_missing(data_root: Path):
 def test_sync_notion_blocks_when_report_final_missing(data_root: Path):
     _init_audit(data_root)
     result = runner.invoke(
-        cli.app, ["sync-notion", *_common("acme", "aud_001", data_root)]
+        cli.app,
+        [
+            "sync-notion",
+            *_common("acme", "aud_001", data_root),
+            "--token", "fake-token",
+            "--parent-id", "fake-page-id",
+        ],
     )
     assert result.exit_code != 0
     combined = result.stdout + result.stderr
